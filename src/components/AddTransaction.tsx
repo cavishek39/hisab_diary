@@ -8,7 +8,8 @@ import {
   addDoc, 
   doc, 
   updateDoc, 
-  increment 
+  increment,
+  serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
@@ -48,8 +49,8 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId }: Ad
         date: new Date(date).toISOString(),
         isAutomated: activeTab === 'sms',
         originalSms: activeTab === 'sms' ? smsText : null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       };
 
       await addDoc(collection(db, 'transactions'), transactionData);
@@ -58,7 +59,8 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId }: Ad
       const accountRef = doc(db, 'accounts', accountId);
       const impact = type === 'Income' ? parseFloat(amount) : -parseFloat(amount);
       await updateDoc(accountRef, {
-        balance: increment(impact)
+        balance: increment(impact),
+        updatedAt: serverTimestamp()
       });
 
       onClose();

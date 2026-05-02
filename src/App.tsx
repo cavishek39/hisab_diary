@@ -19,7 +19,8 @@ import {
   setDoc,
   doc,
   getDoc,
-  orderBy
+  orderBy,
+  serverTimestamp
 } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
@@ -61,13 +62,13 @@ export default function App() {
           const userSnap = await getDoc(userRef);
           
           if (!userSnap.exists()) {
-            const newUser: UserProfile = {
+            const newUser = {
               userId: u.uid,
               email: u.email || '',
               currency: 'USD',
               categories: DEFAULT_CATEGORIES,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
             };
             await setDoc(userRef, newUser);
           }

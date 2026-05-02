@@ -3,7 +3,7 @@ import { formatCurrency, cn } from '../lib/utils';
 import { format } from 'date-fns';
 import { Search, Filter, ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
+import { deleteDoc, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
@@ -32,7 +32,8 @@ export default function Transactions({ transactions, accounts }: TransactionsPro
       const accountRef = doc(db, 'accounts', t.accountId);
       const impact = t.type === 'Income' ? -t.amount : t.amount;
       await updateDoc(accountRef, {
-        balance: increment(impact)
+        balance: increment(impact),
+        updatedAt: serverTimestamp()
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `transactions/${t.id}`);

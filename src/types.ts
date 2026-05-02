@@ -6,8 +6,8 @@ export interface UserProfile {
   email: string;
   currency: string;
   categories: string[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface Account {
@@ -19,8 +19,8 @@ export interface Account {
   currency: string;
   icon?: string;
   color?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface Transaction {
@@ -35,8 +35,8 @@ export interface Transaction {
   isAutomated: boolean;
   originalSms?: string;
   targetAccountId?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface ParsedTransaction {

@@ -39,7 +39,13 @@ service cloud.firestore {
     match /users/{userId} {
       function isValidUser(data) {
         return data.userId == request.auth.uid &&
-               data.email is string && data.email.size() <= 256;
+               data.email is string && data.email.size() <= 256 &&
+               data.currency is string && data.currency.size() <= 10 &&
+               data.categories is list && data.categories.size() <= 50 &&
+               data.createdAt is timestamp &&
+               data.updatedAt is timestamp &&
+               data.keys().hasAll(['userId', 'email', 'currency', 'categories', 'createdAt', 'updatedAt']) &&
+               data.keys().size() == 6;
       }
 
       allow get: if isOwner(userId);
@@ -55,7 +61,11 @@ service cloud.firestore {
         return data.userId == request.auth.uid &&
                data.name is string && data.name.size() <= 100 &&
                data.type in ['Bank', 'Investment', 'Cash', 'Credit'] &&
-               data.balance is number;
+               data.balance is number &&
+               data.createdAt is timestamp &&
+               data.updatedAt is timestamp &&
+               data.keys().hasAll(['userId', 'name', 'type', 'balance', 'createdAt', 'updatedAt']) &&
+               data.keys().size() == 6;
       }
 
       allow list: if isOwner(resource.data.userId);
@@ -76,7 +86,12 @@ service cloud.firestore {
                data.accountId is string &&
                data.amount is number &&
                data.type in ['Expense', 'Income', 'Transfer'] &&
-               data.date is string;
+               data.date is string &&
+               data.isAutomated is bool &&
+               data.createdAt is timestamp &&
+               data.updatedAt is timestamp &&
+               data.keys().hasAll(['userId', 'accountId', 'amount', 'type', 'category', 'description', 'date', 'isAutomated', 'originalSms', 'createdAt', 'updatedAt']) &&
+               data.keys().size() == 11;
       }
 
       allow list: if isOwner(resource.data.userId);

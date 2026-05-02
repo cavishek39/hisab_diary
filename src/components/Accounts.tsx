@@ -7,7 +7,8 @@ import {
   addDoc, 
   deleteDoc, 
   doc, 
-  updateDoc 
+  updateDoc,
+  serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
@@ -35,8 +36,8 @@ export default function Accounts({ accounts, userId }: AccountsProps) {
         name,
         type,
         balance: parseFloat(balance),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
       setIsModalOpen(false);
       setName('');
