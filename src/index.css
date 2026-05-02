@@ -17,13 +17,5 @@
 }
 
 .brutalist-card {
-  @apply bg-white/5 border border-white/10 rounded-[2rem] transition-all duration-300;
-}
-
-.text-hero {
-  @apply text-[90px] md:text-[120px] font-black leading-[0.85] tracking-tighter;
-}
-
-.label-caps {
-  @apply text-[10px] uppercase tracking-[0.3em] font-bold;
+  @apply bg-white/[0.03] border border-white/5 rounded-[2.5rem] transition-all duration-300;
 }

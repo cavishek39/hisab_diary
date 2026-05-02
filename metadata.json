@@ -1,6 +1,6 @@
 {
   "name": "WealthFlow",
   "description": "Unified personal finance tracker with automated SMS-based expense parsing and net worth monitoring.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": []
 }

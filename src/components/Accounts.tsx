@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Account, AccountType } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
-import { Plus, Wallet, MoreVertical, Trash2, Edit2, Landmark, CreditCard, PiggyBank, TrendingUp as TrendingUpIcon } from 'lucide-react';
+import { Plus, Wallet, Trash2, Landmark, CreditCard, PiggyBank, TrendingUp } from 'lucide-react';
 import { 
   collection, 
   addDoc, 
@@ -15,12 +15,21 @@ import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { ACCOUNT_TYPES } from '../constants';
 import { motion } from 'motion/react';
 
+const ACCOUNT_TYPE_ICONS: Record<string, React.ReactNode> = {
+  'Bank': <Landmark size={20} />,
+  'Cash': <Wallet size={20} />,
+  'Credit': <CreditCard size={20} />,
+  'Investment': <TrendingUp size={20} />,
+};
+
 interface AccountsProps {
   accounts: Account[];
   userId: string;
+  currency?: string;
+  isMasked: boolean;
 }
 
-export default function Accounts({ accounts, userId }: AccountsProps) {
+export default function Accounts({ accounts, userId, currency = 'USD', isMasked }: AccountsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('Bank');
@@ -59,115 +68,122 @@ export default function Accounts({ accounts, userId }: AccountsProps) {
   return (
     <div className="space-y-10">
       <div>
-        <h2 className="text-4xl font-black italic font-serif tracking-tight mb-2">Connected Vaults</h2>
-        <p className="label-caps opacity-40">Financial Entity Management</p>
+        <h2 className="text-4xl font-black tracking-tight mb-2">My Accounts</h2>
+        <p className="text-white/40 text-sm font-medium uppercase tracking-widest">Manage your banks, cash and wallets</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {accounts.map(acc => (
-          <div key={acc.id} className="brutalist-card p-10 relative group overflow-hidden hover:bg-white/[0.03]">
-            <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+          <motion.div 
+            key={acc.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="group brutalist-card p-8 flex flex-col min-h-[220px] bg-white/[0.03] hover:bg-white/[0.05] transition-all border border-white/5 hover:border-brand-emerald/30 relative overflow-hidden"
+          >
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-brand-emerald/10 flex items-center justify-center text-brand-emerald">
+                  {ACCOUNT_TYPE_ICONS[acc.type] || <Wallet size={20} />}
+                </div>
+                <div>
+                  <h3 className="font-black text-xl tracking-tight leading-tight">{acc.name}</h3>
+                  <p className="text-[10px] opacity-40 font-black uppercase tracking-widest">{acc.type}</p>
+                </div>
+              </div>
               <button 
                 onClick={() => deleteAccount(acc.id)}
-                className="text-white/20 hover:text-red-500 p-2"
+                className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-500/10 rounded-full text-red-500 transition-all active:scale-90"
               >
-                <Trash2 size={18} />
+                <Trash2 size={16} />
               </button>
             </div>
 
-            <div className="flex flex-col h-full">
-              <div className="mb-8">
-                <span className="label-caps opacity-30 block mb-2">{acc.type}</span>
-                <h3 className="font-black text-2xl tracking-tighter uppercase">{acc.name}</h3>
-              </div>
-
-              <div className="mt-auto">
-                <p className="label-caps text-brand-emerald mb-1">Balance</p>
-                <h4 className="text-4xl font-black tracking-tighter">{formatCurrency(acc.balance)}</h4>
-              </div>
-
-              {/* Decorative background letter */}
-              <div className="absolute -bottom-6 -right-4 text-[100px] font-black opacity-[0.03] select-none pointer-events-none uppercase">
-                {acc.name[0]}
-              </div>
+            <div className="mt-auto relative z-10">
+              <p className="text-[10px] uppercase font-black opacity-30 tracking-[0.2em] mb-1">Available Balance</p>
+              <h4 className="text-4xl font-black tracking-tighter">
+                {isMasked ? '••••••' : formatCurrency(acc.balance, currency)}
+              </h4>
             </div>
-          </div>
+
+            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-brand-emerald/5 blur-[50px] pointer-events-none" />
+          </motion.div>
         ))}
 
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="border-4 border-dashed border-white/5 p-10 rounded-[2rem] flex flex-col items-center justify-center gap-4 text-white/20 hover:border-brand-emerald hover:text-white transition-all group min-h-[250px]"
+          className="border-2 border-dashed border-white/10 p-10 rounded-[2rem] flex flex-col items-center justify-center gap-4 text-white/20 hover:border-brand-emerald hover:text-white transition-all group min-h-[220px]"
         >
-          <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center group-hover:bg-brand-emerald group-hover:text-black transition-colors">
-            <Plus size={32} />
+          <div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center group-hover:bg-brand-emerald group-hover:text-black transition-colors">
+            <Plus size={28} />
           </div>
-          <span className="font-black uppercase tracking-widest text-[10px]">Initialize New Vault</span>
+          <span className="font-black uppercase tracking-widest text-[10px]">Add New Account</span>
         </button>
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[100]">
           <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
+            initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-zinc-900 border border-white/10 rounded-[2.5rem] p-12 w-full max-w-lg shadow-2xl"
+            className="bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 md:p-12 w-full max-w-lg shadow-2xl"
           >
-            <h3 className="text-4xl font-black italic font-serif tracking-tight mb-8">New Vault</h3>
-            <form onSubmit={handleAddAccount} className="space-y-8">
+            <h3 className="text-3xl font-black tracking-tight mb-8">Setup Account</h3>
+            <form onSubmit={handleAddAccount} className="space-y-6">
               <div>
-                <label className="label-caps opacity-40 block mb-3">Vault Designation</label>
+                <label className="text-[10px] uppercase font-black opacity-40 mb-2 block tracking-widest">Account Name</label>
                 <input 
                   type="text" 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full p-4 bg-white/5 rounded-2xl border border-white/10 focus:border-brand-emerald outline-none font-black text-xl uppercase tracking-tighter"
-                  placeholder="Designation Name"
+                  className="w-full p-4 bg-white/5 rounded-2xl border border-white/10 focus:border-brand-emerald outline-none font-bold text-xl"
+                  placeholder="e.g. HDFC Bank, My Wallet"
                 />
               </div>
               <div>
-                <label className="label-caps opacity-40 block mb-3">Entity Type</label>
-                <div className="grid grid-cols-2 gap-3">
+                <label className="text-[10px] uppercase font-black opacity-40 mb-2 block tracking-widest">Account Type</label>
+                <div className="grid grid-cols-2 gap-2">
                   {ACCOUNT_TYPES.map(t => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setType(t as AccountType)}
                       className={cn(
-                        "p-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all",
+                        "p-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
                         type === t 
                           ? "bg-white border-white text-black" 
                           : "bg-transparent border-white/10 text-white/40 hover:border-white/30"
                       )}
                     >
+                      {ACCOUNT_TYPE_ICONS[t]}
                       {t}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="label-caps opacity-40 block mb-3">Initial Liquidity</label>
+                <label className="text-[10px] uppercase font-black opacity-40 mb-2 block tracking-widest">Initial Balance</label>
                 <input 
                   type="number" 
                   step="0.01"
                   value={balance}
                   onChange={(e) => setBalance(e.target.value)}
-                  className="w-full p-4 bg-white/5 rounded-2xl border border-white/10 focus:border-brand-emerald outline-none font-black text-xl tracking-tighter"
+                  className="w-full p-4 bg-white/5 rounded-2xl border border-white/10 focus:border-brand-emerald outline-none font-bold text-xl"
                   placeholder="0.00"
                 />
               </div>
-              <div className="flex gap-4 pt-6">
+              <div className="flex gap-4 pt-4">
                 <button 
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-4 label-caps opacity-40 hover:opacity-100 transition-opacity"
+                  className="flex-1 py-4 text-[10px] uppercase font-black opacity-40 hover:opacity-100 transition-opacity"
                 >
-                  Abort
+                  Cancel
                 </button>
                 <button 
                   type="submit"
-                  className="flex-[2] py-4 bg-brand-emerald text-black font-black uppercase tracking-widest text-xs rounded-full shadow-lg active:scale-95"
+                  className="flex-[2] py-4 bg-brand-emerald text-black font-black uppercase tracking-widest text-[10px] rounded-full shadow-lg active:scale-95"
                 >
-                  Establish Vault
+                  Create Account
                 </button>
               </div>
             </form>

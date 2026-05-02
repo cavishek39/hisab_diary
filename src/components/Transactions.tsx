@@ -10,9 +10,11 @@ import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 interface TransactionsProps {
   transactions: Transaction[];
   accounts: Account[];
+  currency?: string;
+  isMasked: boolean;
 }
 
-export default function Transactions({ transactions, accounts }: TransactionsProps) {
+export default function Transactions({ transactions, accounts, currency = 'USD', isMasked }: TransactionsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'All' | 'Expense' | 'Income' | 'Transfer'>('All');
 
@@ -42,89 +44,92 @@ export default function Transactions({ transactions, accounts }: TransactionsPro
 
   return (
     <div className="space-y-10">
-      <div className="flex flex-col md:flex-row gap-6 items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 text-[#F5F5F5]">
         <div>
-          <h2 className="text-4xl font-black italic font-serif tracking-tight mb-2">Live Stream</h2>
-          <p className="label-caps opacity-40">Financial Velocity Monitoring</p>
+          <h2 className="text-4xl font-black tracking-tight mb-2">Logs</h2>
+          <p className="text-white/40 text-sm font-medium uppercase tracking-widest">History of your financial activities</p>
         </div>
 
-        <div className="flex gap-2 p-1.5 bg-white/5 rounded-full border border-white/10">
-          {['All', 'Expense', 'Income', 'Transfer'].map(type => (
-            <button
-              key={type}
-              onClick={() => setFilterType(type as any)}
-              className={cn(
-                "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
-                filterType === type 
-                  ? "bg-white text-black" 
-                  : "text-white/40 hover:text-white"
-              )}
-            >
-              {type}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={16} />
+            <input 
+              type="text" 
+              placeholder="Search history..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl focus:border-brand-emerald outline-none font-bold"
+            />
+          </div>
+          <div className="flex bg-white/5 border border-white/10 p-1 rounded-2xl">
+            {['All', 'Expense', 'Income'].map((t) => (
+              <button
+                key={t}
+                onClick={() => setFilterType(t as any)}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                  filterType === t ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-white/20" size={20} />
-        <input 
-          type="text" 
-          placeholder="Filter Stream by Narrative..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-16 pr-8 py-5 bg-white/5 border border-white/10 rounded-[1.5rem] focus:border-brand-emerald outline-none font-bold text-sm tracking-tight"
-        />
-      </div>
-
-      {/* List */}
-      <div className="brutalist-card overflow-hidden">
+      <div className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-white/[0.02] text-left border-b border-white/5">
-                <th className="px-8 py-6 label-caps opacity-30">Date</th>
-                <th className="px-8 py-6 label-caps opacity-30">Narrative</th>
-                <th className="px-8 py-6 label-caps opacity-30">Vault</th>
-                <th className="px-8 py-6 label-caps opacity-30 text-right">Velocity</th>
-                <th className="px-8 py-6 label-caps opacity-30 w-10"></th>
+              <tr className="border-b border-white/5">
+                <th className="px-8 py-6 text-[10px] uppercase font-black tracking-[0.2em] opacity-30">Transaction Details</th>
+                <th className="px-8 py-6 text-[10px] uppercase font-black tracking-[0.2em] opacity-30">Category</th>
+                <th className="px-8 py-6 text-[10px] uppercase font-black tracking-[0.2em] opacity-30 text-right">Value</th>
+                <th className="px-8 py-6"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredTransactions.map(t => {
                 const account = accounts.find(a => a.id === t.accountId);
                 return (
-                  <tr key={t.id} className="hover:bg-white/[0.02] transition-colors group">
+                  <tr key={t.id} className="group hover:bg-white/[0.01] transition-colors">
                     <td className="px-8 py-6">
-                      <p className="text-sm font-black uppercase tracking-tight">{format(new Date(t.date), 'MMM dd')}</p>
-                      <p className="text-[10px] opacity-30 font-bold uppercase tracking-widest">{format(new Date(t.date), 'yyyy')}</p>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div>
-                        <p className="text-lg font-black tracking-tighter leading-tight uppercase">{t.category}</p>
-                        <p className="text-[10px] opacity-40 font-bold uppercase tracking-widest mt-1 italic">{t.description}</p>
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-xs",
+                          t.type === 'Income' ? "bg-brand-emerald/10 text-brand-emerald" : "bg-white/5 text-white/40"
+                        )}>
+                          {t.type === 'Income' ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />}
+                        </div>
+                        <div>
+                          <p className="font-bold text-lg tracking-tight leading-tight">{t.description || t.category}</p>
+                          <p className="text-[10px] opacity-30 font-bold uppercase tracking-widest mt-1">
+                            {format(new Date(t.date), 'MMM dd, yyyy')} • {account?.name || 'Local'}
+                          </p>
+                        </div>
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-white/5 rounded-full border border-white/10">
-                        {account?.name || 'External'}
+                      <span className="px-3 py-1 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-widest text-white/40 border border-white/5">
+                        {t.category}
                       </span>
                     </td>
                     <td className="px-8 py-6 text-right">
                       <p className={cn(
-                        "text-xl font-black tracking-tighter",
+                        "font-black text-xl tracking-tight leading-none",
                         t.type === 'Income' ? "text-brand-emerald" : "text-white"
                       )}>
                         {t.type === 'Income' ? '+' : t.type === 'Expense' ? '-' : ''}
-                        {formatCurrency(t.amount)}
+                        {isMasked ? '••••••' : formatCurrency(t.amount, currency)}
                       </p>
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-8 py-6 text-right">
                       <button 
                         onClick={() => handleDelete(t)}
-                        className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-red-500 transition-all p-1"
+                        className="opacity-0 group-hover:opacity-100 p-3 hover:bg-red-500/10 rounded-xl text-red-500 transition-all active:scale-95"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </tr>
@@ -132,14 +137,12 @@ export default function Transactions({ transactions, accounts }: TransactionsPro
               })}
             </tbody>
           </table>
+          {filteredTransactions.length === 0 && (
+            <div className="py-24 text-center opacity-10">
+              <p className="font-black uppercase tracking-widest text-[10px]">No records found</p>
+            </div>
+          )}
         </div>
-        
-        {filteredTransactions.length === 0 && (
-          <div className="py-32 flex flex-col items-center justify-center text-white/20">
-            <Search size={64} className="mb-6 opacity-[0.05]" />
-            <p className="font-black uppercase tracking-[0.3em] text-xs">No Data Synchronized</p>
-          </div>
-        )}
       </div>
     </div>
   );

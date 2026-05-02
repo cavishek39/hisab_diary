@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Account, Transaction } from '../types';
 import { formatCurrency } from '../lib/utils';
-import { TrendingUp, TrendingDown, Wallet, CreditCard, PieChart as PieChartIcon, ArrowLeftRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, CreditCard, PieChart as PieChartIcon, ArrowLeftRight, Eye, EyeOff } from 'lucide-react';
 import { 
   BarChart, 
   Bar, 
@@ -18,12 +18,24 @@ interface DashboardProps {
   accounts: Account[];
   transactions: Transaction[];
   onViewAllTransactions: () => void;
+  currency?: string;
+  isMasked: boolean;
+  setIsMasked: (val: boolean) => void;
 }
 
-export default function Dashboard({ accounts, transactions, onViewAllTransactions }: DashboardProps) {
+export default function Dashboard({ 
+  accounts, 
+  transactions, 
+  onViewAllTransactions, 
+  currency = 'USD',
+  isMasked,
+  setIsMasked
+}: DashboardProps) {
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-  const totalBalanceStr = totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const totalBalanceStr = totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const [whole, decimal] = totalBalanceStr.split('.');
+
+  const symbol = (0).toLocaleString(undefined, { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace(/\d/g, '').trim();
 
   const monthlyTransactions = transactions.filter(t => {
     const date = new Date(t.date);
@@ -54,104 +66,107 @@ export default function Dashboard({ accounts, transactions, onViewAllTransaction
   });
 
   return (
-    <div className="space-y-20">
-      {/* Hero Metric: Net Worth */}
-      <div>
-        <p className="label-caps text-brand-emerald mb-4">Aggregate Net Worth</p>
-        <h1 className="text-hero">
-          ${whole}.<span className="opacity-30 tracking-tight">{decimal}</span>
-        </h1>
-        <div className="flex flex-wrap gap-8 mt-10">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-black">+4.2%</span>
-            <span className="text-xs uppercase tracking-widest opacity-40 italic font-serif text-brand-emerald">Positive Velocity</span>
+    <div className="space-y-12">
+      {/* Hero Section */}
+      <div className="bg-white/[0.03] border border-white/5 p-8 md:p-12 rounded-[2.5rem] relative overflow-hidden">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-2">
+            <p className="text-[10px] uppercase tracking-[0.2em] font-black text-brand-emerald">Aggregate Net Worth ({currency})</p>
+            <button 
+              onClick={() => setIsMasked(!isMasked)}
+              className="p-1.5 hover:bg-white/5 rounded-lg transition-colors text-white/30 hover:text-white"
+              title={isMasked ? "Show balances" : "Hide balances"}
+            >
+              {isMasked ? <Eye size={14} /> : <EyeOff size={14} />}
+            </button>
           </div>
-          <div className="w-[1px] h-4 bg-white/20 self-center hidden sm:block"></div>
-          <div className="flex gap-4">
-            <StatSmall label="Income" amount={income} color="text-brand-emerald" />
-            <StatSmall label="Expense" amount={expenses} color="text-red-500" />
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-8">
+            {symbol}{isMasked ? '••••••' : whole}.<span className="opacity-20">{isMasked ? '••' : decimal}</span>
+          </h1>
+          
+          <div className="flex flex-wrap gap-6 md:gap-12">
+            <StatSmall label="Monthly Income" amount={income} color="text-brand-emerald" currency={currency} isMasked={isMasked} />
+            <StatSmall label="Monthly Expense" amount={expenses} color="text-red-500" currency={currency} isMasked={isMasked} />
           </div>
         </div>
+        {/* Subtle accent blur */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-emerald/5 blur-[100px] pointer-events-none" />
       </div>
 
-      <div className="grid grid-cols-12 gap-10">
-        {/* Activity Stream */}
-        <div className="col-span-12 lg:col-span-7 brutalist-card p-10 flex flex-col">
-          <div className="flex justify-between items-end mb-12">
-            <h2 className="text-4xl font-black italic font-serif tracking-tight">Live Stream</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8">
+        {/* Recent Activity */}
+        <div className="md:col-span-2 lg:col-span-8 bg-white/[0.02] border border-white/5 rounded-[2rem] p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-xl font-black tracking-tight">Recent Activity</h2>
             <button 
               onClick={onViewAllTransactions}
-              className="text-[10px] uppercase tracking-widest font-black bg-white text-black px-4 py-1.5 hover:bg-brand-emerald transition-colors"
+              className="text-[10px] uppercase tracking-widest font-black opacity-40 hover:opacity-100 transition-opacity"
             >
-              Full Ledger
+              View Full Ledger →
             </button>
           </div>
           
-          <div className="space-y-0">
+          <div className="space-y-2">
             {recentTransactions.length > 0 ? (
               recentTransactions.map(t => (
-                <div key={t.id} className="flex items-center justify-between py-6 border-b border-white/5 last:border-0 hover:bg-white/[0.02] -mx-4 px-4 transition-colors">
-                  <div>
-                    <p className="font-black text-xl tracking-tight leading-tight">{t.description || t.category}</p>
-                    <p className="text-[10px] opacity-30 font-bold uppercase tracking-widest mt-1">
-                      {t.isAutomated ? 'Parsed via Smart AI' : 'Manual Entry'} • {format(new Date(t.date), 'hh:mm a')}
-                    </p>
+                <div key={t.id} className="group flex items-center justify-between p-4 rounded-3xl hover:bg-white/[0.03] transition-colors border border-transparent hover:border-white/5">
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-xs",
+                      t.type === 'Income' ? "bg-brand-emerald/10 text-brand-emerald" : "bg-white/5 text-white/40"
+                    )}>
+                      {t.category[0]}
+                    </div>
+                    <div>
+                      <p className="font-bold text-base tracking-tight">{t.description || t.category}</p>
+                      <p className="text-[10px] opacity-30 font-bold uppercase tracking-widest mt-0.5">
+                        {format(new Date(t.date), 'MMM dd')} • {t.category}
+                      </p>
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className={cn(
-                      "font-black text-2xl tracking-tighter",
+                      "font-black text-lg tracking-tight",
                       t.type === 'Income' ? "text-brand-emerald" : "text-white"
                     )}>
-                      {t.type === 'Income' ? '+' : '-'}{formatCurrency(t.amount)}
+                      {t.type === 'Income' ? '+' : '-'}{isMasked ? '••••' : formatCurrency(t.amount, currency)}
                     </p>
-                    <p className="text-[10px] opacity-40 font-bold uppercase tracking-[0.2em]">{t.category}</p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="py-20 text-center opacity-20">
+              <div className="py-20 text-center opacity-10">
                 <ArrowLeftRight size={48} className="mx-auto mb-4" />
-                <p className="font-black uppercase tracking-widest text-xs">No Recent Activity</p>
+                <p className="font-bold uppercase tracking-widest text-[10px]">No activity logged</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Assets & Allocation */}
-        <div className="col-span-12 lg:col-span-5 flex flex-col gap-10">
-          <div className="h-64 bg-brand-emerald text-black rounded-[2rem] p-10 relative overflow-hidden group">
-            <div className="relative z-10">
-              <h3 className="text-[10px] uppercase tracking-[0.2em] font-black mb-2 opacity-60">Liquid Capital</h3>
-              <p className="text-6xl font-black tracking-tighter leading-none">${(totalBalance/1000).toFixed(1)}k</p>
-              <div className="mt-8">
-                <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Active Accounts</p>
-                <div className="flex gap-2 mt-2">
-                  {accounts.slice(0, 3).map(a => (
-                    <div key={a.id} className="w-8 h-8 rounded-full border-2 border-black/10 bg-black/5 flex items-center justify-center text-[10px] font-black">
-                      {a.name[0]}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="absolute -bottom-8 -right-8 text-[180px] font-black opacity-10 leading-none select-none group-hover:scale-110 transition-transform">
-              $
-            </div>
-          </div>
-
-          <div className="flex-1 brutalist-card p-10">
-            <h3 className="label-caps opacity-40 mb-10">Revenue Cycle</h3>
-            <div className="h-48">
+        {/* Charts & Breakdown */}
+        <div className="md:col-span-2 lg:col-span-4 flex flex-col gap-8">
+          <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-8 flex-1">
+            <h3 className="text-[10px] uppercase tracking-[0.2em] font-black opacity-30 mb-8">Spending Flow</h3>
+            <div className="h-48 mb-6">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <Tooltip 
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                    contentStyle={{ backgroundColor: '#09090b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}
                   />
-                  <Bar dataKey="income" fill="#10b981" radius={[2, 2, 0, 0]} barSize={12} />
-                  <Bar dataKey="expense" fill="#f87171" radius={[2, 2, 0, 0]} barSize={12} />
+                  <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={8} />
+                  <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={8} />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-[10px] uppercase font-black opacity-30 mb-1">Top Expense Type</p>
+                <p className="font-black text-xl tracking-tight">Food & Drink</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-brand-emerald/10 flex items-center justify-center">
+                <TrendingDown size={14} className="text-red-500" />
+              </div>
             </div>
           </div>
         </div>
@@ -160,11 +175,13 @@ export default function Dashboard({ accounts, transactions, onViewAllTransaction
   );
 }
 
-function StatSmall({ label, amount, color }: { label: string, amount: number, color: string }) {
+function StatSmall({ label, amount, color, currency, isMasked }: { label: string, amount: number, color: string, currency: string, isMasked?: boolean }) {
   return (
     <div className="flex flex-col">
       <span className="text-[10px] uppercase font-black opacity-30 tracking-[0.2em] mb-1">{label}</span>
-      <span className={cn("text-lg font-black tracking-tight", color)}>{formatCurrency(amount)}</span>
+      <span className={cn("text-lg font-black tracking-tight", color)}>
+        {isMasked ? '••••••' : formatCurrency(amount, currency)}
+      </span>
     </div>
   );
 }
