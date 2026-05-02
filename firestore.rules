@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isOwner(userId) && isVerified();
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.userId == request.auth.uid &&
+               data.email is string && data.email.size() <= 256;
+      }
+
+      allow get: if isOwner(userId);
+      allow create: if isVerifiedOwner(userId) && isValidUser(incoming()) && incoming().createdAt == request.time;
+      allow update: if isVerifiedOwner(userId) && isValidUser(incoming()) && 
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt == request.time;
+    }
+
+    // Account Rules
+    match /accounts/{accountId} {
+      function isValidAccount(data) {
+        return data.userId == request.auth.uid &&
+               data.name is string && data.name.size() <= 100 &&
+               data.type in ['Bank', 'Investment', 'Cash', 'Credit'] &&
+               data.balance is number;
+      }
+
+      allow list: if isOwner(resource.data.userId);
+      allow get: if isOwner(resource.data.userId);
+      allow create: if isVerified() && isValidAccount(incoming()) && incoming().createdAt == request.time;
+      allow update: if isVerifiedOwner(existing().userId) && 
+                       isValidAccount(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt == request.time;
+      allow delete: if isVerifiedOwner(existing().userId);
+    }
+
+    // Transaction Rules
+    match /transactions/{transactionId} {
+      function isValidTransaction(data) {
+        return data.userId == request.auth.uid &&
+               data.accountId is string &&
+               data.amount is number &&
+               data.type in ['Expense', 'Income', 'Transfer'] &&
+               data.date is string;
+      }
+
+      allow list: if isOwner(resource.data.userId);
+      allow get: if isOwner(resource.data.userId);
+      allow create: if isVerified() && isValidTransaction(incoming()) && 
+                       incoming().createdAt == request.time;
+      allow update: if isVerifiedOwner(existing().userId) && 
+                       isValidTransaction(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt == request.time;
+      allow delete: if isVerifiedOwner(existing().userId);
+    }
+  }
+}
