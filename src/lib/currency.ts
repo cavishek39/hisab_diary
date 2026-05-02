@@ -20,9 +20,9 @@ export async function detectLocalCurrency(): Promise<{ code: string; symbol: str
       return { code: browserCurrency, symbol: getSymbol(browserCurrency) };
     }
 
-    return { code: 'USD', symbol: '$' };
+    return { code: 'INR', symbol: '₹' };
   } catch (e) {
-    return { code: 'USD', symbol: '$' };
+    return { code: 'INR', symbol: '₹' };
   }
 }
 

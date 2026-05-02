@@ -29,7 +29,7 @@ interface AccountsProps {
   isMasked: boolean;
 }
 
-export default function Accounts({ accounts, userId, currency = 'USD', isMasked }: AccountsProps) {
+export default function Accounts({ accounts, userId, currency = 'INR', isMasked }: AccountsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('Bank');

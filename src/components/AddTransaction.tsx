@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Account, TransactionType } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Account, TransactionType, Transaction } from '../types';
 import { cn } from '../lib/utils';
 import { X, MessageSquare, Plus, Loader2, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -21,9 +21,10 @@ interface AddTransactionProps {
   onClose: () => void;
   accounts: Account[];
   userId: string;
+  transactionToEdit?: Transaction;
 }
 
-export default function AddTransaction({ isOpen, onClose, accounts, userId }: AddTransactionProps) {
+export default function AddTransaction({ isOpen, onClose, accounts, userId, transactionToEdit }: AddTransactionProps) {
   const [activeTab, setActiveTab] = useState<'manual' | 'sms'>('manual');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<TransactionType>('Expense');
@@ -34,7 +35,21 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId }: Ad
   const [smsText, setSmsText] = useState('');
   const [isParsing, setIsParsing] = useState(false);
 
-  const handleManualAdd = async (e?: React.FormEvent) => {
+  useEffect(() => {
+    if (transactionToEdit) {
+      setAmount(transactionToEdit.amount.toString());
+      setType(transactionToEdit.type);
+      setAccountId(transactionToEdit.accountId);
+      setCategory(transactionToEdit.category);
+      setDescription(transactionToEdit.description || '');
+      setDate(new Date(transactionToEdit.date).toISOString().split('T')[0]);
+      setActiveTab('manual');
+    } else {
+      resetForm();
+    }
+  }, [transactionToEdit, isOpen]);
+
+  const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!amount || !accountId || !userId) return;
 
@@ -47,26 +62,58 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId }: Ad
         category,
         description,
         date: new Date(date).toISOString(),
-        isAutomated: activeTab === 'sms',
-        originalSms: activeTab === 'sms' ? smsText : null,
-        createdAt: serverTimestamp(),
+        isAutomated: transactionToEdit ? (transactionToEdit.isAutomated || false) : (activeTab === 'sms'),
         updatedAt: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'transactions'), transactionData);
+      if (transactionToEdit) {
+        // Edit Mode
+        await updateDoc(doc(db, 'transactions', transactionToEdit.id), transactionData);
 
-      // Update account balance
-      const accountRef = doc(db, 'accounts', accountId);
-      const impact = type === 'Income' ? parseFloat(amount) : -parseFloat(amount);
-      await updateDoc(accountRef, {
-        balance: increment(impact),
-        updatedAt: serverTimestamp()
-      });
+        // Adjust balance
+        const oldImpact = transactionToEdit.type === 'Income' ? transactionToEdit.amount : -transactionToEdit.amount;
+        const newImpact = type === 'Income' ? parseFloat(amount) : -parseFloat(amount);
+
+        if (transactionToEdit.accountId === accountId) {
+          // Same account, adjust by difference
+          const balanceDiff = newImpact - oldImpact;
+          if (balanceDiff !== 0) {
+            await updateDoc(doc(db, 'accounts', accountId), {
+              balance: increment(balanceDiff),
+              updatedAt: serverTimestamp()
+            });
+          }
+        } else {
+          // Changed accounts: reverse old impact and apply new impact
+          await updateDoc(doc(db, 'accounts', transactionToEdit.accountId), {
+            balance: increment(-oldImpact),
+            updatedAt: serverTimestamp()
+          });
+          await updateDoc(doc(db, 'accounts', accountId), {
+            balance: increment(newImpact),
+            updatedAt: serverTimestamp()
+          });
+        }
+      } else {
+        // Create Mode
+        await addDoc(collection(db, 'transactions'), {
+          ...transactionData,
+          createdAt: serverTimestamp(),
+          originalSms: activeTab === 'sms' ? smsText : null,
+        });
+
+        const accountRef = doc(db, 'accounts', accountId);
+        const impact = type === 'Income' ? parseFloat(amount) : -parseFloat(amount);
+        await updateDoc(accountRef, {
+          balance: increment(impact),
+          updatedAt: serverTimestamp()
+        });
+      }
 
       onClose();
       resetForm();
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'transactions');
+      handleFirestoreError(error, transactionToEdit ? OperationType.UPDATE : OperationType.WRITE, transactionToEdit ? `transactions/${transactionToEdit.id}` : 'transactions');
     }
   };
 
@@ -110,49 +157,53 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId }: Ad
         className="bg-zinc-900 border border-white/10 rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden"
       >
         <div className="flex items-center justify-between p-8 border-b border-white/5">
-          <h3 className="text-3xl font-black italic font-serif tracking-tight">Ledger Entry</h3>
+          <h3 className="text-3xl font-black italic font-serif tracking-tight">
+            {transactionToEdit ? 'Edit Transaction' : 'Ledger Entry'}
+          </h3>
           <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>
 
-        <div className="flex p-1.5 bg-white/5 m-8 rounded-full">
-          <button
-            onClick={() => setActiveTab('manual')}
-            className={cn(
-              "flex-1 py-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
-              activeTab === 'manual' ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
-            )}
-          >
-            Manual
-          </button>
-          <button
-            onClick={() => setActiveTab('sms')}
-            className={cn(
-              "flex-1 py-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
-              activeTab === 'sms' ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
-            )}
-          >
-            Smart SMS
-          </button>
-        </div>
+        {!transactionToEdit && (
+          <div className="flex p-1.5 bg-white/5 m-8 rounded-full">
+            <button
+              onClick={() => setActiveTab('manual')}
+              className={cn(
+                "flex-1 py-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                activeTab === 'manual' ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
+              )}
+            >
+              Manual
+            </button>
+            <button
+              onClick={() => setActiveTab('sms')}
+              className={cn(
+                "flex-1 py-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                activeTab === 'sms' ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
+              )}
+            >
+              Smart SMS
+            </button>
+          </div>
+        )}
 
-        <div className="px-8 pb-10">
+        <div className={cn("px-8 pb-10", transactionToEdit && "pt-10")}>
           <AnimatePresence mode="wait">
-            {activeTab === 'manual' ? (
+            {activeTab === 'manual' || transactionToEdit ? (
               <motion.form
                 key="manual-form"
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                onSubmit={handleManualAdd}
+                onSubmit={handleSubmit}
                 className="space-y-6"
               >
                 <div className="grid grid-cols-2 gap-6">
                   <div className="col-span-2">
                     <label className="label-caps opacity-40 block mb-3">Amount</label>
                     <div className="relative">
-                      <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-2xl text-white/20">$</span>
+                      <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-2xl text-white/20">₹</span>
                       <input 
                         type="number"
                         step="0.01"
@@ -202,6 +253,17 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId }: Ad
                       className="w-full p-4 bg-white/5 border border-white/10 rounded-xl font-black text-xs uppercase tracking-widest outline-none focus:border-brand-emerald text-white"
                     />
                   </div>
+
+                  <div className="col-span-2">
+                    <label className="label-caps opacity-40 block mb-3">Date</label>
+                    <input 
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full p-4 bg-white/5 border border-white/10 rounded-xl font-black text-xs uppercase tracking-widest outline-none focus:border-brand-emerald text-white"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="flex gap-4 pt-6">
@@ -216,7 +278,7 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId }: Ad
                     type="submit"
                     className="flex-[2] py-4 bg-brand-emerald text-black font-black uppercase tracking-widest text-xs rounded-full shadow-lg active:scale-95"
                   >
-                    Commit Entry
+                    {transactionToEdit ? 'Save Changes' : 'Commit Entry'}
                   </button>
                 </div>
               </motion.form>

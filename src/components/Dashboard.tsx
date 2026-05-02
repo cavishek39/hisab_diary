@@ -27,7 +27,7 @@ export default function Dashboard({
   accounts, 
   transactions, 
   onViewAllTransactions, 
-  currency = 'USD',
+  currency = 'INR',
   isMasked,
   setIsMasked
 }: DashboardProps) {

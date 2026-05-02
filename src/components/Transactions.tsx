@@ -1,22 +1,25 @@
 import { Transaction, Account } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { format } from 'date-fns';
-import { Search, Filter, ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Trash2 } from 'lucide-react';
+import { Search, Filter, ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Trash2, Edit2 } from 'lucide-react';
 import { useState } from 'react';
 import { deleteDoc, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
+import AddTransaction from './AddTransaction';
 
 interface TransactionsProps {
   transactions: Transaction[];
   accounts: Account[];
+  userId: string;
   currency?: string;
   isMasked: boolean;
 }
 
-export default function Transactions({ transactions, accounts, currency = 'USD', isMasked }: TransactionsProps) {
+export default function Transactions({ transactions, accounts, userId, currency = 'INR', isMasked }: TransactionsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'All' | 'Expense' | 'Income' | 'Transfer'>('All');
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const filteredTransactions = transactions.filter(t => {
     const matchesSearch = t.description?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -125,12 +128,22 @@ export default function Transactions({ transactions, accounts, currency = 'USD',
                       </p>
                     </td>
                     <td className="px-8 py-6 text-right">
-                      <button 
-                        onClick={() => handleDelete(t)}
-                        className="opacity-0 group-hover:opacity-100 p-3 hover:bg-red-500/10 rounded-xl text-red-500 transition-all active:scale-95"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => setEditingTransaction(t)}
+                          className="p-3 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all active:scale-95"
+                          title="Edit Transaction"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(t)}
+                          className="p-3 hover:bg-red-500/10 rounded-xl text-red-500 transition-all active:scale-95"
+                          title="Delete Transaction"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -144,6 +157,16 @@ export default function Transactions({ transactions, accounts, currency = 'USD',
           )}
         </div>
       </div>
+
+      {editingTransaction && (
+        <AddTransaction 
+          isOpen={true} 
+          onClose={() => setEditingTransaction(null)} 
+          accounts={accounts} 
+          userId={userId} 
+          transactionToEdit={editingTransaction}
+        />
+      )}
     </div>
   );
 }
