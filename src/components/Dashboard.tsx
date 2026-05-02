@@ -68,13 +68,13 @@ export default function Dashboard({
   return (
     <div className="space-y-12">
       {/* Hero Section */}
-      <div className="bg-white/[0.03] border border-white/5 p-8 md:p-12 rounded-[2.5rem] relative overflow-hidden">
+      <div className="brutalist-card p-8 md:p-12 relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
             <p className="text-[10px] uppercase tracking-[0.2em] font-black text-brand-emerald">Aggregate Net Worth ({currency})</p>
             <button 
               onClick={() => setIsMasked(!isMasked)}
-              className="p-1.5 hover:bg-white/5 rounded-lg transition-colors text-white/30 hover:text-white"
+              className="p-1.5 hover:bg-white/5 dark:hover:bg-white/5 rounded-lg transition-colors text-text-main/30 hover:text-text-main"
               title={isMasked ? "Show balances" : "Hide balances"}
             >
               {isMasked ? <Eye size={14} /> : <EyeOff size={14} />}
@@ -95,7 +95,7 @@ export default function Dashboard({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8">
         {/* Recent Activity */}
-        <div className="md:col-span-2 lg:col-span-8 bg-white/[0.02] border border-white/5 rounded-[2rem] p-8">
+        <div className="md:col-span-2 lg:col-span-8 brutalist-card p-8">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-xl font-black tracking-tight">Recent Activity</h2>
             <button 
@@ -109,11 +109,11 @@ export default function Dashboard({
           <div className="space-y-2">
             {recentTransactions.length > 0 ? (
               recentTransactions.map(t => (
-                <div key={t.id} className="group flex items-center justify-between p-4 rounded-3xl hover:bg-white/[0.03] transition-colors border border-transparent hover:border-white/5">
+                <div key={t.id} className="group flex items-center justify-between p-4 rounded-3xl hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors border border-transparent hover:border-card-border">
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-xs",
-                      t.type === 'Income' ? "bg-brand-emerald/10 text-brand-emerald" : "bg-white/5 text-white/40"
+                      t.type === 'Income' ? "bg-brand-emerald/10 text-brand-emerald" : "bg-text-main/5 text-text-main/40"
                     )}>
                       {t.category[0]}
                     </div>
@@ -127,7 +127,7 @@ export default function Dashboard({
                   <div className="text-right">
                     <p className={cn(
                       "font-black text-lg tracking-tight",
-                      t.type === 'Income' ? "text-brand-emerald" : "text-white"
+                      t.type === 'Income' ? "text-brand-emerald" : "text-text-main"
                     )}>
                       {t.type === 'Income' ? '+' : '-'}{isMasked ? '••••' : formatCurrency(t.amount, currency)}
                     </p>
@@ -145,14 +145,20 @@ export default function Dashboard({
 
         {/* Charts & Breakdown */}
         <div className="md:col-span-2 lg:col-span-4 flex flex-col gap-8">
-          <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-8 flex-1">
+          <div className="brutalist-card p-8 flex-1">
             <h3 className="text-[10px] uppercase tracking-[0.2em] font-black opacity-30 mb-8">Spending Flow</h3>
             <div className="h-48 mb-6">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <Tooltip 
-                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-                    contentStyle={{ backgroundColor: '#09090b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}
+                    cursor={{ fill: 'rgba(var(--text-main),0.02)' }}
+                    contentStyle={{ 
+                      backgroundColor: 'var(--card-bg)', 
+                      border: '1px solid var(--card-border)', 
+                      borderRadius: '16px',
+                      color: 'var(--text-main)'
+                    }}
+                    itemStyle={{ color: 'inherit' }}
                   />
                   <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={8} />
                   <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={8} />

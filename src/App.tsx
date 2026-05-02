@@ -49,11 +49,12 @@ import Accounts from './components/Accounts';
 import Transactions from './components/Transactions';
 import AddTransaction from './components/AddTransaction';
 import VoiceAssistant from './components/VoiceAssistant';
+import Settings from './components/Settings';
 
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'dashboard' | 'accounts' | 'transactions'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'accounts' | 'transactions' | 'settings'>('dashboard');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -61,39 +62,67 @@ export default function App() {
   const [isMasked, setIsMasked] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+    if (profile?.theme) {
+      document.documentElement.classList.toggle('dark', profile.theme === 'dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  }, [profile?.theme]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, u => {
       setUser(u);
-      if (u) {
-        // Check if user profile exists, if not create default with detected currency
-        const userRef = doc(db, 'users', u.uid);
-        try {
-          const userSnap = await getDoc(userRef);
-          
-          if (!userSnap.exists()) {
-            const local = await detectLocalCurrency();
-            const newUser = {
-              userId: u.uid,
-              email: u.email || '',
-              currency: local.code || 'INR',
-              categories: DEFAULT_CATEGORIES,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp()
-            };
-            await setDoc(userRef, newUser);
-            setProfile(newUser as any);
-          } else {
-            setProfile(userSnap.data() as UserProfile);
-          }
-        } catch (error) {
-          handleFirestoreError(error, OperationType.WRITE, `users/${u.uid}`);
-        }
-      } else {
-        setProfile(null);
-      }
       setLoading(false);
     });
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      return;
+    }
+
+    const userRef = doc(db, 'users', user.uid);
+    let isInitialized = false;
+
+    const setupProfile = async () => {
+      try {
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          const local = await detectLocalCurrency();
+          const newUser = {
+            userId: user.uid,
+            email: user.email || '',
+            currency: local.code || 'INR',
+            theme: 'dark' as const,
+            categories: DEFAULT_CATEGORIES,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          };
+          await setDoc(userRef, newUser);
+          // Snapshot will trigger setProfile
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+      }
+    };
+
+    if (!isInitialized) {
+      setupProfile();
+      isInitialized = true;
+    }
+
+    const unsubProfile = onSnapshot(userRef, (snap) => {
+      if (snap.exists()) {
+        setProfile(snap.data() as UserProfile);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+    });
+
+    return unsubProfile;
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -210,20 +239,20 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-bg-main text-[#F5F5F5] px-6">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-bg-main text-text-main px-6">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md p-12 brutalist-card text-center"
+          className="w-full max-w-md p-12 brutalist-card text-center shadow-2xl"
         >
           <div className="w-12 h-12 bg-brand-emerald rounded-full mx-auto mb-8 animate-pulse shadow-[0_0_30px_rgba(16,185,129,0.4)]" />
           <h1 className="text-5xl font-black tracking-tighter mb-4">WEALTHFLOW</h1>
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-white/40 mb-10 leading-relaxed">
+          <p className="text-sm font-bold uppercase tracking-[0.2em] opacity-40 mb-10 leading-relaxed">
             Aggregate Net Worth Monitoring • Local First
           </p>
           <button
             onClick={handleLogin}
-            className="w-full py-5 rounded-full bg-white text-black font-black uppercase tracking-widest text-xs transition-all hover:bg-brand-emerald hover:scale-[1.02] active:scale-95"
+            className="w-full py-5 rounded-full bg-text-main text-bg-main font-black uppercase tracking-widest text-xs transition-all hover:bg-brand-emerald hover:text-black hover:scale-[1.02] active:scale-95"
           >
             Authenticate via Google
           </button>
@@ -233,7 +262,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-main text-[#F5F5F5] flex flex-col p-4 md:p-10 lg:p-12 overflow-x-hidden">
+    <div className="min-h-screen bg-bg-main text-text-main flex flex-col p-4 md:p-10 lg:p-12 overflow-x-hidden">
       {/* Header */}
       <header className="flex justify-between items-center mb-8 md:mb-16">
         <div className="flex items-center gap-3">
@@ -241,15 +270,15 @@ export default function App() {
           <span className="text-2xl font-black tracking-widest uppercase italic font-serif">Hisab Diary</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-text-main/5 border border-card-border rounded-full">
             <div className="w-2 h-2 bg-brand-emerald rounded-full animate-pulse"></div>
             <span className="text-[9px] uppercase tracking-widest font-black opacity-60">Verified Sync</span>
           </div>
           <button 
             onClick={handleLogout}
-            className="w-9 h-9 rounded-full border border-white/20 hover:border-brand-emerald transition-colors flex items-center justify-center bg-white/5"
+            className="w-9 h-9 rounded-full border border-card-border hover:border-brand-emerald transition-colors flex items-center justify-center bg-card-bg shadow-sm"
           >
-            <LogOut size={14} className="text-white/40" />
+            <LogOut size={14} className="opacity-40" />
           </button>
         </div>
       </header>
@@ -265,27 +294,27 @@ export default function App() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="max-w-2xl mx-auto py-10"
               >
-                <div className="brutalist-card p-10 text-center space-y-8">
-                  <div className="w-20 h-20 bg-brand-emerald/10 rounded-full flex items-center justify-center mx-auto">
+                <div className="brutalist-card p-10 text-center space-y-8 shadow-xl">
+                  <div className="w-20 h-20 bg-brand-emerald/10 rounded-full flex items-center justify-center mx-auto border border-brand-emerald/20">
                     <Globe className="text-brand-emerald" size={40} />
                   </div>
                   <div>
                     <h2 className="text-4xl font-black tracking-tighter mb-4">Welcome to your Diary</h2>
-                    <p className="text-white/60 leading-relaxed font-medium">
+                    <p className="opacity-60 leading-relaxed font-medium">
                       Let's start your financial journey. First, add an account like your Bank, Cash wallet, or Savings to track your net worth.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button 
                       onClick={() => setView('accounts')}
-                      className="p-6 border-2 border-white/10 rounded-3xl hover:border-brand-emerald transition-all text-left group"
+                      className="p-6 border-2 border-card-border rounded-3xl hover:border-brand-emerald transition-all text-left group bg-card-bg/50"
                     >
                       <p className="text-[10px] uppercase font-black opacity-40 mb-2 tracking-widest">Step 1</p>
                       <h4 className="text-xl font-bold group-hover:text-brand-emerald transition-colors">Create Account</h4>
                     </button>
                     <button 
                       onClick={() => setIsAddModalOpen(true)}
-                      className="p-6 border-2 border-white/10 rounded-3xl opacity-40 cursor-not-allowed text-left"
+                      className="p-6 border-2 border-card-border rounded-3xl opacity-40 cursor-not-allowed text-left bg-card-bg/50"
                     >
                       <p className="text-[10px] uppercase font-black opacity-40 mb-2 tracking-widest">Step 2</p>
                       <h4 className="text-xl font-bold">Log Transaction</h4>
@@ -346,36 +375,63 @@ export default function App() {
                     />
                   </motion.div>
                 )}
+
+                {view === 'settings' && (
+                  <motion.div
+                    key="settings"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    <Settings 
+                      profile={profile} 
+                      onLogout={handleLogout} 
+                      isMasked={isMasked}
+                      setIsMasked={setIsMasked}
+                    />
+                  </motion.div>
+                )}
               </>
             )}
           </AnimatePresence>
         </div>
 
         {/* Global Navigation - Bottom Bar */}
-        <nav className="fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-lg">
-          <div className="flex items-center gap-1 bg-zinc-900/90 backdrop-blur-2xl border border-white/10 p-1.5 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-            <NavButton 
-              active={view === 'dashboard'} 
-              onClick={() => setView('dashboard')}
-              label="Home"
-            />
-            <NavButton 
-              active={view === 'accounts'} 
-              onClick={() => setView('accounts')}
-              label="Accounts"
-            />
-            <NavButton 
-              active={view === 'transactions'} 
-              onClick={() => setView('transactions')}
-              label="Logs"
-            />
-            <button 
-              onClick={() => setIsAddModalOpen(true)}
-              className="ml-auto w-12 h-12 bg-white text-black rounded-full flex items-center justify-center transition-all hover:bg-brand-emerald hover:scale-110 active:scale-95 shadow-xl"
-            >
-              <Plus size={24} strokeWidth={3} />
-            </button>
-            <div className="ml-2">
+        <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-xl">
+          <div className="flex items-center bg-card-bg/80 backdrop-blur-3xl border border-card-border p-2 rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.3)]">
+            <div className="flex bg-text-main/5 rounded-full p-1 mr-4">
+              <NavButton 
+                active={view === 'dashboard'} 
+                onClick={() => setView('dashboard')}
+                label="Home"
+              />
+              <NavButton 
+                active={view === 'accounts'} 
+                onClick={() => setView('accounts')}
+                label="Ledger"
+              />
+              <NavButton 
+                active={view === 'transactions'} 
+                onClick={() => setView('transactions')}
+                label="Logs"
+              />
+              <NavButton 
+                active={view === 'settings'} 
+                onClick={() => setView('settings')}
+                label="Settings"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 ml-auto">
+              <button 
+                onClick={() => setIsAddModalOpen(true)}
+                className="w-12 h-12 bg-text-main text-bg-main rounded-full flex items-center justify-center transition-all hover:bg-brand-emerald hover:text-black hover:scale-105 active:scale-95 shadow-lg group"
+              >
+                <Plus size={24} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
+              </button>
+              
+              <div className="h-8 w-px bg-text-main/10 mx-1" />
+              
               <VoiceAssistant 
                 onAction={handleVoiceAction} 
                 accountNames={accounts.map(a => a.name)} 
@@ -400,10 +456,10 @@ function NavButton({ active, onClick, label }: { active: boolean, onClick: () =>
     <button
       onClick={onClick}
       className={cn(
-        "px-4 md:px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.15em] transition-all",
+        "px-5 py-2.5 rounded-full text-[9px] font-mono font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden",
         active 
-          ? "bg-white text-black shadow-lg" 
-          : "text-white/40 hover:text-white"
+          ? "bg-text-main text-bg-main shadow-lg" 
+          : "text-text-main/40 hover:text-text-main/70 hover:bg-text-main/5"
       )}
     >
       {label}

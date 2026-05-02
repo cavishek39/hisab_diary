@@ -150,28 +150,28 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId, tran
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[100]">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[100]">
       <motion.div 
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="bg-zinc-900 border border-white/10 rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden"
+        className="bg-card-bg border border-card-border rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden text-text-main"
       >
-        <div className="flex items-center justify-between p-8 border-b border-white/5">
+        <div className="flex items-center justify-between p-8 border-b border-card-border">
           <h3 className="text-3xl font-black italic font-serif tracking-tight">
             {transactionToEdit ? 'Edit Transaction' : 'Ledger Entry'}
           </h3>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>
 
         {!transactionToEdit && (
-          <div className="flex p-1.5 bg-white/5 m-8 rounded-full">
+          <div className="flex p-1.5 bg-text-main/5 m-8 rounded-full border border-card-border">
             <button
               onClick={() => setActiveTab('manual')}
               className={cn(
                 "flex-1 py-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
-                activeTab === 'manual' ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
+                activeTab === 'manual' ? "bg-text-main text-bg-main shadow-lg" : "text-text-main/40 hover:text-text-main"
               )}
             >
               Manual
@@ -180,7 +180,7 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId, tran
               onClick={() => setActiveTab('sms')}
               className={cn(
                 "flex-1 py-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
-                activeTab === 'sms' ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white"
+                activeTab === 'sms' ? "bg-text-main text-bg-main shadow-lg" : "text-text-main/40 hover:text-text-main"
               )}
             >
               Smart SMS
@@ -203,14 +203,14 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId, tran
                   <div className="col-span-2">
                     <label className="label-caps opacity-40 block mb-3">Amount</label>
                     <div className="relative">
-                      <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-2xl text-white/20">₹</span>
+                      <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-2xl opacity-20">₹</span>
                       <input 
                         type="number"
                         step="0.01"
                         autoFocus
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="w-full pl-10 pr-6 py-5 bg-white/5 border border-white/10 rounded-2xl text-4xl font-black tracking-tighter outline-none focus:border-brand-emerald"
+                        className="w-full pl-10 pr-6 py-5 bg-text-main/5 border border-card-border rounded-2xl text-4xl font-black tracking-tighter outline-none focus:border-brand-emerald text-text-main"
                         placeholder="0.00"
                         required
                       />
@@ -222,9 +222,9 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId, tran
                     <select 
                       value={type}
                       onChange={(e) => setType(e.target.value as any)}
-                      className="w-full p-4 bg-white/5 border border-white/10 rounded-xl font-black text-xs uppercase tracking-widest outline-none focus:border-brand-emerald appearance-none text-white"
+                      className="w-full p-4 bg-text-main/5 border border-card-border rounded-xl font-black text-xs uppercase tracking-widest outline-none focus:border-brand-emerald appearance-none text-text-main"
                     >
-                      {TRANSACTION_TYPES.map(t => <option key={t} value={t} className="bg-zinc-900">{t}</option>)}
+                      {TRANSACTION_TYPES.map(t => <option key={t} value={t} className="bg-card-bg text-text-main">{t}</option>)}
                     </select>
                   </div>
 
@@ -233,12 +233,12 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId, tran
                     <select 
                       value={accountId}
                       onChange={(e) => setAccountId(e.target.value)}
-                      className="w-full p-4 bg-white/5 border border-white/10 rounded-xl font-black text-xs uppercase tracking-widest outline-none focus:border-brand-emerald appearance-none text-white"
+                      className="w-full p-4 bg-text-main/5 border border-card-border rounded-xl font-black text-xs uppercase tracking-widest outline-none focus:border-brand-emerald appearance-none text-text-main"
                       required
                     >
-                      <option value="" disabled className="bg-zinc-900">Select Vault</option>
+                      <option value="" disabled className="bg-card-bg text-text-main">Select Vault</option>
                       {accounts.map(acc => (
-                        <option key={acc.id} value={acc.id} className="bg-zinc-900">{acc.name}</option>
+                        <option key={acc.id} value={acc.id} className="bg-card-bg text-text-main">{acc.name}</option>
                       ))}
                     </select>
                   </div>
@@ -250,7 +250,7 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId, tran
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Narrative Description"
-                      className="w-full p-4 bg-white/5 border border-white/10 rounded-xl font-black text-xs uppercase tracking-widest outline-none focus:border-brand-emerald text-white"
+                      className="w-full p-4 bg-text-main/5 border border-card-border rounded-xl font-black text-xs uppercase tracking-widest outline-none focus:border-brand-emerald text-text-main"
                     />
                   </div>
 
@@ -260,7 +260,7 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId, tran
                       type="date"
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
-                      className="w-full p-4 bg-white/5 border border-white/10 rounded-xl font-black text-xs uppercase tracking-widest outline-none focus:border-brand-emerald text-white"
+                      className="w-full p-4 bg-text-main/5 border border-card-border rounded-xl font-black text-xs uppercase tracking-widest outline-none focus:border-brand-emerald text-text-main"
                       required
                     />
                   </div>
@@ -290,7 +290,7 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId, tran
                 exit={{ opacity: 0, x: -10 }}
                 className="space-y-8"
               >
-                <div className="bg-emerald-500/10 p-6 rounded-2xl text-brand-emerald text-xs font-bold leading-relaxed border border-brand-emerald/20 flex gap-4">
+                <div className="bg-brand-emerald/10 p-6 rounded-2xl text-brand-emerald text-xs font-bold leading-relaxed border border-brand-emerald/20 flex gap-4">
                   <Wand2 className="shrink-0" size={20} />
                   <p>Input raw transmission data (SMS). Neural parsing will extract velocity, type, and designation automatically.</p>
                 </div>
@@ -300,14 +300,14 @@ export default function AddTransaction({ isOpen, onClose, accounts, userId, tran
                     value={smsText}
                     onChange={(e) => setSmsText(e.target.value)}
                     placeholder="Paste bank notification here..."
-                    className="w-full h-48 p-6 bg-white/5 border border-white/10 rounded-[1.5rem] font-bold text-sm outline-none focus:border-brand-emerald resize-none text-white"
+                    className="w-full h-48 p-6 bg-text-main/5 border border-card-border rounded-[1.5rem] font-bold text-sm outline-none focus:border-brand-emerald resize-none text-text-main"
                   />
                 </div>
 
                 <button 
                   onClick={handleSmsParse}
                   disabled={isParsing || !smsText.trim()}
-                  className="w-full py-5 bg-white disabled:bg-white/10 disabled:text-white/20 text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3"
+                  className="w-full py-5 bg-text-main disabled:bg-text-main/10 disabled:text-text-main/20 text-bg-main font-black uppercase tracking-[0.2em] text-[10px] rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3"
                 >
                   {isParsing ? (
                     <>

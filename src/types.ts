@@ -5,6 +5,7 @@ export interface UserProfile {
   userId: string;
   email: string;
   currency: string;
+  theme?: 'light' | 'dark';
   categories: string[];
   createdAt: any;
   updatedAt: any;

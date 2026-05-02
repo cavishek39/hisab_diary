@@ -41,18 +41,19 @@ service cloud.firestore {
         return data.userId == request.auth.uid &&
                data.email is string && data.email.size() <= 256 &&
                data.currency is string && data.currency.size() <= 10 &&
-               data.categories is list && data.categories.size() <= 50 &&
+               (!('theme' in data) || data.theme in ['light', 'dark']) &&
+               data.categories is list && data.categories.size() <= 100 &&
                data.createdAt is timestamp &&
                data.updatedAt is timestamp &&
                data.keys().hasAll(['userId', 'email', 'currency', 'categories', 'createdAt', 'updatedAt']) &&
-               data.keys().size() == 6;
+               data.keys().size() >= 6 && data.keys().size() <= 15;
       }
 
       allow get: if isOwner(userId);
       allow create: if isVerifiedOwner(userId) && isValidUser(incoming()) && incoming().createdAt == request.time;
-      allow update: if isVerifiedOwner(userId) && isValidUser(incoming()) && 
+      allow update: if isOwner(userId) && isValidUser(incoming()) && 
                        incoming().createdAt == existing().createdAt &&
-                       incoming().updatedAt == request.time;
+                       (incoming().updatedAt == request.time || incoming().updatedAt == existing().updatedAt);
     }
 
     // Account Rules
@@ -62,10 +63,11 @@ service cloud.firestore {
                data.name is string && data.name.size() <= 100 &&
                data.type in ['Bank', 'Investment', 'Cash', 'Credit'] &&
                data.balance is number &&
+               (!('currency' in data) || (data.currency is string && data.currency.size() <= 10)) &&
                data.createdAt is timestamp &&
                data.updatedAt is timestamp &&
                data.keys().hasAll(['userId', 'name', 'type', 'balance', 'createdAt', 'updatedAt']) &&
-               data.keys().size() == 6;
+               data.keys().size() >= 6 && data.keys().size() <= 9; // userId, name, type, balance, createdAt, updatedAt + currency, icon, color
       }
 
       allow list: if isOwner(resource.data.userId);
@@ -90,8 +92,8 @@ service cloud.firestore {
                data.isAutomated is bool &&
                data.createdAt is timestamp &&
                data.updatedAt is timestamp &&
-               data.keys().hasAll(['userId', 'accountId', 'amount', 'type', 'category', 'description', 'date', 'isAutomated', 'originalSms', 'createdAt', 'updatedAt']) &&
-               data.keys().size() == 11;
+               data.keys().hasAll(['userId', 'accountId', 'amount', 'type', 'category', 'description', 'date', 'isAutomated', 'createdAt', 'updatedAt']) &&
+               data.keys().size() >= 10 && data.keys().size() <= 12; // 10 base + originalSms + targetAccountId
       }
 
       allow list: if isOwner(resource.data.userId);

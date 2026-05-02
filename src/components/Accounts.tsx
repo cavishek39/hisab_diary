@@ -69,7 +69,7 @@ export default function Accounts({ accounts, userId, currency = 'INR', isMasked 
     <div className="space-y-10">
       <div>
         <h2 className="text-4xl font-black tracking-tight mb-2">My Accounts</h2>
-        <p className="text-white/40 text-sm font-medium uppercase tracking-widest">Manage your banks, cash and wallets</p>
+        <p className="opacity-40 text-sm font-medium uppercase tracking-widest">Manage your banks, cash and wallets</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -78,16 +78,20 @@ export default function Accounts({ accounts, userId, currency = 'INR', isMasked 
             key={acc.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="group brutalist-card p-8 flex flex-col min-h-[220px] bg-white/[0.03] hover:bg-white/[0.05] transition-all border border-white/5 hover:border-brand-emerald/30 relative overflow-hidden"
+            className="group relative brutalist-card p-8 flex flex-col min-h-[240px] transition-all overflow-hidden"
           >
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-brand-emerald/10 flex items-center justify-center text-brand-emerald">
+            {/* Subtle Grid Pattern Overlay */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                 style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+            
+            <div className="flex justify-between items-start mb-auto relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-brand-emerald/10 border border-brand-emerald/20 flex items-center justify-center text-brand-emerald shadow-inner">
                   {ACCOUNT_TYPE_ICONS[acc.type] || <Wallet size={20} />}
                 </div>
                 <div>
-                  <h3 className="font-black text-xl tracking-tight leading-tight">{acc.name}</h3>
-                  <p className="text-[10px] opacity-40 font-black uppercase tracking-widest">{acc.type}</p>
+                  <h3 className="font-sans font-black text-2xl tracking-tight leading-tight">{acc.name}</h3>
+                  <p className="text-[9px] opacity-40 font-mono uppercase tracking-[0.2em] font-medium mt-1">{acc.type} ACCOUNT</p>
                 </div>
               </div>
               <button 
@@ -98,34 +102,42 @@ export default function Accounts({ accounts, userId, currency = 'INR', isMasked 
               </button>
             </div>
 
-            <div className="mt-auto relative z-10">
-              <p className="text-[10px] uppercase font-black opacity-30 tracking-[0.2em] mb-1">Available Balance</p>
-              <h4 className="text-4xl font-black tracking-tighter">
-                {isMasked ? '••••••' : formatCurrency(acc.balance, currency)}
-              </h4>
+            <div className="mt-12 relative z-10 pt-6 border-t border-card-border">
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[10px] font-serif italic opacity-40 mb-2">Available Liquidity</p>
+                  <h4 className="text-4xl font-mono font-medium tracking-tighter">
+                    {isMasked ? '••••••' : formatCurrency(acc.balance, currency)}
+                  </h4>
+                </div>
+                <div className="text-[8px] font-mono text-brand-emerald/40 uppercase tracking-widest hidden group-hover:block transition-all">
+                  Synchronized
+                </div>
+              </div>
             </div>
 
-            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-brand-emerald/5 blur-[50px] pointer-events-none" />
+            {/* Glowing Accent */}
+            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-brand-emerald/10 blur-[60px] pointer-events-none group-hover:bg-brand-emerald/15 transition-all" />
           </motion.div>
         ))}
 
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="border-2 border-dashed border-white/10 p-10 rounded-[2rem] flex flex-col items-center justify-center gap-4 text-white/20 hover:border-brand-emerald hover:text-white transition-all group min-h-[220px]"
+          className="border-2 border-dashed border-card-border p-10 rounded-[2.5rem] flex flex-col items-center justify-center gap-5 opacity-40 hover:opacity-100 hover:border-brand-emerald hover:bg-brand-emerald/5 transition-all group min-h-[240px]"
         >
-          <div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center group-hover:bg-brand-emerald group-hover:text-black transition-colors">
-            <Plus size={28} />
+          <div className="w-16 h-16 border border-card-border rounded-full flex items-center justify-center group-hover:bg-brand-emerald group-hover:border-brand-emerald group-hover:text-black transition-all">
+            <Plus size={32} />
           </div>
-          <span className="font-black uppercase tracking-widest text-[10px]">Add New Account</span>
+          <p className="font-mono uppercase tracking-[0.3em] text-[10px]">Initialize New Stream</p>
         </button>
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[100]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[100]">
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 md:p-12 w-full max-w-lg shadow-2xl"
+            className="bg-card-bg border border-card-border rounded-[2.5rem] p-8 md:p-12 w-full max-w-lg shadow-2xl"
           >
             <h3 className="text-3xl font-black tracking-tight mb-8">Setup Account</h3>
             <form onSubmit={handleAddAccount} className="space-y-6">
@@ -135,7 +147,7 @@ export default function Accounts({ accounts, userId, currency = 'INR', isMasked 
                   type="text" 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full p-4 bg-white/5 rounded-2xl border border-white/10 focus:border-brand-emerald outline-none font-bold text-xl"
+                  className="w-full p-4 bg-text-main/5 rounded-2xl border border-card-border focus:border-brand-emerald outline-none font-bold text-xl"
                   placeholder="e.g. HDFC Bank, My Wallet"
                 />
               </div>
@@ -150,11 +162,16 @@ export default function Accounts({ accounts, userId, currency = 'INR', isMasked 
                       className={cn(
                         "p-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
                         type === t 
-                          ? "bg-white border-white text-black" 
-                          : "bg-transparent border-white/10 text-white/40 hover:border-white/30"
+                          ? "bg-text-main text-bg-main border-text-main shadow-lg" 
+                          : "bg-transparent border-card-border opacity-60 hover:opacity-100 hover:border-brand-emerald"
                       )}
                     >
-                      {ACCOUNT_TYPE_ICONS[t]}
+                      <div className={cn(
+                        "w-5 h-5 flex items-center justify-center",
+                        type === t ? "text-bg-main" : "text-brand-emerald"
+                      )}>
+                        {ACCOUNT_TYPE_ICONS[t]}
+                      </div>
                       {t}
                     </button>
                   ))}
@@ -167,7 +184,7 @@ export default function Accounts({ accounts, userId, currency = 'INR', isMasked 
                   step="0.01"
                   value={balance}
                   onChange={(e) => setBalance(e.target.value)}
-                  className="w-full p-4 bg-white/5 rounded-2xl border border-white/10 focus:border-brand-emerald outline-none font-bold text-xl"
+                  className="w-full p-4 bg-text-main/5 rounded-2xl border border-card-border focus:border-brand-emerald outline-none font-bold text-xl text-text-main"
                   placeholder="0.00"
                 />
               </div>
